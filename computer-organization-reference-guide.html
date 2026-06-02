@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Computer Organization Reference Guide</title>
+<style>
+  @page { size: A4; margin: 4mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #777;
+    color: #111;
+    font: 6.45pt/1.12 Arial, Helvetica, sans-serif;
+  }
+  .page {
+    width: 210mm;
+    height: 297mm;
+    padding: 4mm;
+    margin: 10px auto;
+    background: white;
+    overflow: hidden;
+    break-after: page;
+    page-break-after: always;
+  }
+  .cols {
+    height: 100%;
+    column-count: 4;
+    column-gap: 1.45mm;
+    column-fill: auto;
+  }
+  h1 {
+    margin: 0 0 1mm;
+    font-size: 9pt;
+    line-height: 1;
+    letter-spacing: 0;
+  }
+  h2 {
+    margin: .6mm 0 .35mm;
+    padding: .45mm .65mm;
+    background: #111;
+    color: white;
+    font-size: 6.7pt;
+    line-height: 1;
+    letter-spacing: 0;
+    break-inside: avoid;
+    break-after: avoid;
+  }
+  h3 {
+    margin: .5mm 0 .2mm;
+    font-size: 6.5pt;
+    line-height: 1.05;
+  }
+  p { margin: .25mm 0; }
+  ul, ol { margin: .25mm 0 .45mm 2.8mm; padding: 0; }
+  li { margin: 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: .35mm 0 .6mm;
+    break-inside: avoid;
+  }
+  th, td {
+    border: .25px solid #555;
+    padding: .25mm .35mm;
+    vertical-align: top;
+  }
+  th { background: #eee; font-weight: 700; }
+  code, pre {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 5.55pt;
+  }
+  pre {
+    margin: .35mm 0 .55mm;
+    padding: .45mm .55mm;
+    border: .25px solid #999;
+    background: #f7f7f7;
+    white-space: pre-wrap;
+    line-height: 1.07;
+    break-inside: avoid;
+  }
+  .box {
+    border: .35px solid #333;
+    padding: .45mm .6mm;
+    margin: 0 0 .65mm;
+    break-inside: avoid;
+  }
+  .cue {
+    border: .3px solid #777;
+    border-left: 1.2mm solid #111;
+    background: #fafafa;
+    padding: .35mm .55mm;
+    margin: .25mm 0 .55mm;
+    break-inside: avoid;
+  }
+  .group {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .tight td { padding: .18mm .28mm; }
+  .mini { font-size: 5.9pt; line-height: 1.08; }
+  .muted { color: #333; }
+  .tag { font-weight: 700; }
+  @media print {
+    body { background: white; }
+    .page {
+      width: 202mm;
+      height: 289mm;
+      margin: 0;
+      padding: 0;
+      box-shadow: none;
+    }
+  }
+</style>
+</head>
+<body>
+
+<section class="page">
+  <div class="cols">
+    <div>
+      <h1>Computer Organization Reference Guide</h1>
+      <div class="box mini">
+        Study workflow: identify the relevant topic, apply the matching pattern, then substitute values. Show method: formula -> substitution -> result. State assumptions for invented ISA questions. For CPU speed, never conclude from GHz alone:
+        <code>T = Ic*CPI/f = Ic*CPI*cycle_time</code>, <code>CPI=sum(CPI_i*I_i)/Ic</code>,
+        <code>MIPS=f/(CPI*10^6)</code>. MIPS/MFLOPS not reliable across ISAs; real benchmark time is better.
+      </div>
+
+      <h2>Digital Logic</h2>
+      <div class="cue mini"><b>Use this when asked:</b> truth table to expression, Boolean laws, NAND/NOR/XOR, or "show gates are functionally complete."</div>
+      <div class="box">
+        <p><b>Truth table -> expression:</b> for every row with output 1, write one minterm. Use variable if bit=1, complement if bit=0. OR all minterms. Simplification not required unless asked.</p>
+        <p><b>Laws:</b> De Morgan: <code>not(A*B)=not A + not B</code>, <code>not(A+B)=not A * not B</code>. XOR=exactly one 1.</p>
+        <p><b>Functional complete:</b> AND+NOT can build OR:
+          <code>A+B = not((not A)*(not B))</code>. Thus AND, OR, NOT are possible.</p>
+      </div>
+
+      <h2>Radix + Signed</h2>
+      <div class="cue mini"><b>Use this when asked:</b> convert bases, write bit patterns for positive/negative numbers, find range, or interpret a bit pattern.</div>
+      <div class="box">
+        <p><b>Value:</b> <code>(...a2 a1 a0.a-1...)_r = sum a_i*r^i</code>.</p>
+        <p><b>Decimal -> base r int:</b> repeatedly divide by r; remainders read upward. Fraction: repeatedly multiply by r; integer parts read downward.</p>
+        <p><b>Binary/hex:</b> group 4 bits from radix point. Prefer hex for long binary answers.</p>
+      </div>
+      <table class="tight mini">
+        <tr><th>Scheme, w bits</th><th>Encode / decode</th><th>Range</th></tr>
+        <tr><td>Unsigned</td><td><code>V=P</code></td><td><code>0..2^w-1</code></td></tr>
+        <tr><td>Sign-mag</td><td>MSB sign, rest magnitude</td><td><code>-(2^(w-1)-1)..+(2^(w-1)-1)</code>, two 0s</td></tr>
+        <tr><td>1's comp</td><td><code>-N = invert(+N)</code>; if MSB=1, <code>V=P-(2^w-1)</code></td><td>same as sign-mag, two 0s</td></tr>
+        <tr><td>2's comp</td><td><code>-N = invert(+N)+1 = 2^w-N</code>; if <code>P>=2^(w-1)</code>, <code>V=P-2^w</code></td><td><code>-2^(w-1)..2^(w-1)-1</code></td></tr>
+        <tr><td>Excess-k</td><td><code>stored P = V+k</code>; <code>V=P-k</code></td><td><code>-k..2^w-1-k</code></td></tr>
+      </table>
+      <div class="box mini">
+        <p><b>2's addition:</b> add bit patterns; discard carry out of MSB. Overflow only when same-sign inputs give opposite-sign result.</p>
+        <p><b>1's addition:</b> add; if carry out, add 1 back (end-around carry).</p>
+        <p><b>Sign extension 2's:</b> copy old sign bit into new upper bits.</p>
+      </div>
+
+      <h2>Floating Point</h2>
+      <div class="cue mini"><b>Use this when asked:</b> encode/decode S|E|f formats, find bias, largest/smallest value, or explain FP add/mul/div. First write the format and bias.</div>
+      <div class="box">
+        <p><b>Generic:</b> <code>V=(-1)^S * 1.f * 2^(E-b)</code>. Bias for m exponent bits:
+          <code>b=2^(m-1)-1</code>.</p>
+        <p><b>Encode decimal x:</b> sign -> convert |x| to binary -> normalize as <code>1.f * 2^e</code> -> stored exponent <code>E=e+b</code> -> store fraction bits after hidden 1; pad/truncate.</p>
+        <p><b>Decode hex:</b> hex -> binary -> split S/E/f -> compute <code>E-b</code> -> evaluate <code>1.f * 2^(E-b)</code>.</p>
+      </div>
+      <table class="tight mini">
+        <tr><th>No special exponent patterns</th><th>Answer</th></tr>
+        <tr><td>Smallest positive</td><td><code>1.0 * 2^(0-b)</code></td></tr>
+        <tr><td>Largest positive</td><td><code>(2-2^-Fbits) * 2^((2^Ebits-1)-b)</code></td></tr>
+        <tr><td>Increase range</td><td>use more exponent bits, fewer fraction bits -> less precision</td></tr>
+      </table>
+      <div class="box mini">
+        If IEEE special patterns are considered, exponent all-0/all-1 are special; valid normalized exponents are <code>1..2^m-2</code>. Include these details only when explicitly required.
+      </div>
+      <div class="box mini">
+        <p><b>FP add/sub:</b> check zero; align smaller exponent by shifting significand right; add/sub significands; normalize; round. If significand becomes <code>10.x</code>, shift right 1 and increment exponent.</p>
+        <p><b>FP mul:</b> sign=<code>S1 xor S2</code>; <code>E=E1+E2-b</code>; multiply significands; normalize/round; check overflow/underflow.</p>
+        <p><b>FP div:</b> sign=<code>S1 xor S2</code>; <code>E=E1-E2+b</code>; divide significands; normalize/round.</p>
+      </div>
+    </div>
+
+    <div>
+      <h2>Cache Mapping</h2>
+      <div class="cue mini"><b>Use this when asked:</b> set/tag/offset, same-block addresses, direct vs set-associative vs fully associative, or cache final contents.</div>
+      <div class="box">
+        <p><b>Always compute in bytes if memory is byte-addressable.</b></p>
+        <p><code>block_bytes = block_words * bytes_per_word</code></p>
+        <p><code>cache_lines = cache_size / block_size</code></p>
+        <p><code>sets = cache_lines / ways</code></p>
+        <p><code>block# = floor(addr/block_bytes)</code>, <code>offset=addr mod block_bytes</code></p>
+      </div>
+      <table class="tight mini">
+        <tr><th>Org</th><th>Index</th><th>Tag</th></tr>
+        <tr><td>Direct</td><td><code>line=block# mod lines</code></td><td><code>floor(block#/lines)</code></td></tr>
+        <tr><td>k-way</td><td><code>set=block# mod sets</code></td><td><code>floor(block#/sets)</code></td></tr>
+        <tr><td>Fully assoc</td><td>none</td><td><code>block#</code></td></tr>
+      </table>
+      <div class="box mini">
+        <p><b>Bits:</b> <code>offset bits=log2(block_bytes)</code>. Direct: <code>line bits=log2(lines)</code>. k-way: <code>set bits=log2(sets)</code>. Tag=remaining upper bits.</p>
+        <p><b>Same block addresses:</b> start=<code>addr-offset</code>, end=<code>start+block_bytes-1</code>.</p>
+        <p><b>Tracing:</b> for each block: map to set/line; hit if present. Miss if absent. If full, evict FIFO oldest or LRU least recently used. Direct map has no choice.</p>
+      </div>
+
+      <h2>Cache Timing</h2>
+      <div class="cue mini"><b>Use this when asked:</b> hit rate, miss rate, miss penalty, AMAT, or multi-level cache timing. Keep units as ns/ms.</div>
+      <div class="box">
+        <p><code>AMAT = hit_time + miss_rate * miss_penalty</code></p>
+        <p><code>hit_rate = 1 - miss_rate</code></p>
+        <p>Course trace style: if each listed block has avg R references, <code>total_refs = listed_blocks*R</code>, <code>hit_rate = 1 - misses/total_refs</code>.</p>
+        <p>Penalty if one word first then later words: <code>first + (block_words-1)*later</code>. If memory transfers g words at a time: groups=<code>ceil(block_words/g)</code>, penalty=<code>first_group+(groups-1)*later_group</code>.</p>
+        <p>Multi-level: <code>L1 + MR1*(L2 + MR2*(L3 + MR3*Mem))</code>.</p>
+      </div>
+      <div class="box mini">
+        <p><b>Write-through:</b> write cache and memory; consistent but slower/needs buffer.</p>
+        <p><b>Write-back:</b> write memory only on replacement if dirty; faster but memory inconsistent.</p>
+        <p><b>Locality:</b> temporal = recently used likely reused. Spatial = nearby addresses likely used. Row-major C arrays: make last subscript the inner loop.</p>
+        <p><b>Split cache:</b> instruction cache + data cache. Reduces structural/resource hazard between instruction fetch and data access; does not solve data/control hazards.</p>
+      </div>
+
+      <h2>Disk, RAID, SSD</h2>
+      <div class="cue mini"><b>Use this when asked:</b> rpm, average rotational latency, sector timing, RAID reliability/capacity, or whether SSD is suitable for page file.</div>
+      <div class="box">
+        <p>Disk access = seek + rotational delay + transfer.</p>
+        <p><code>rev_time_ms = 60000/rpm</code>; average rotational latency=<code>rev_time/2 = 30000/rpm</code>.</p>
+        <p><code>sector_time = rev_time / sectors_per_track</code>.</p>
+        <p>Consecutive n sectors same track: <code>seek + avg_latency + n*sector_time</code>. Scattered n sectors: <code>n*(seek + avg_latency + sector_time)</code>.</p>
+      </div>
+      <table class="tight mini">
+        <tr><th>RAID</th><th>Key point</th></tr>
+        <tr><td>0</td><td>striping, no redundancy, fastest, one disk fail loses data</td></tr>
+        <tr><td>1</td><td>mirroring, high reliability, reads can use either copy, writes duplicated</td></tr>
+        <tr><td>3/4</td><td>single dedicated parity disk; recover 1 failure; parity bottleneck</td></tr>
+        <tr><td>5</td><td>distributed parity; survives 1 disk failure; capacity=(N-1)*disk</td></tr>
+        <tr><td>6</td><td>two distributed parity values; survives 2 disk failures; capacity=(N-2)*disk</td></tr>
+      </table>
+      <div class="box mini">
+        SSD for page file: suitable vs HDD due low access time and random I/O, but still much slower than RAM; heavy writes cause wear; more RAM is better.
+      </div>
+
+      <h2>Virtual Memory</h2>
+      <div class="cue mini"><b>Use this when asked:</b> page fault, TLB, logical vs physical address, demand paging, or page file.</div>
+      <div class="box mini">
+        Logical/virtual address is program-visible; physical address accesses RAM. MMU maps virtual page number -> physical frame number; offset copied unchanged.
+        PTE contains valid bit V, protection P, dirty D, physical frame number. Page fault: locate page on disk -> find/free/evict frame -> if victim dirty write back -> invalidate old PTE -> load page -> update PTE -> restart process. TLB caches page-table entries.
+      </div>
+    </div>
+
+    <div>
+      <h2>Addressing + ISA</h2>
+      <div class="cue mini"><b>Use this when asked:</b> define addressing modes, translate <code>10(R1)</code>, explain instruction format, or hand-assemble simple instructions.</div>
+      <table class="tight mini">
+        <tr><th>Mode</th><th>Meaning</th><th>Example</th></tr>
+        <tr><td>Immediate</td><td>operand=<code>A</code></td><td><code>MOV #200,R6</code></td></tr>
+        <tr><td>Direct</td><td><code>EA=A</code>, operand=<code>mem[EA]</code></td><td><code>LD A,R1</code></td></tr>
+        <tr><td>Indirect</td><td><code>EA=mem[A]</code>, operand=<code>mem[EA]</code></td><td><code>LD (A),R1</code></td></tr>
+        <tr><td>Register</td><td>operand=<code>Rval</code></td><td><code>MOV R1,R2</code></td></tr>
+        <tr><td>Reg indirect</td><td><code>EA=Rval</code>, operand=<code>mem[EA]</code></td><td><code>LD (R1),R2</code></td></tr>
+        <tr><td>Displacement</td><td><code>EA=A+Rval</code>, operand=<code>mem[EA]</code></td><td><code>LD 10(R1),R2</code></td></tr>
+        <tr><td>Stack</td><td><code>EA=top of stack</code></td><td><code>PUSH/POP</code></td></tr>
+      </table>
+      <div class="box mini">
+        <code>Rval</code> means the contents of register R. Destination is last in course assembly: <code>ADD R1,R2,R3</code> means <code>R3=R1+R2</code>. Branch uses condition flags from previous ALU op.
+      </div>
+      <table class="tight mini">
+        <tr><th>Opcode</th><th>Instruction</th><th>Opcode</th><th>Instruction</th></tr>
+        <tr><td>00</td><td>ADD</td><td>07</td><td>ST</td></tr>
+        <tr><td>01</td><td>SUB</td><td>08</td><td>Bcc</td></tr>
+        <tr><td>02</td><td>NOT</td><td>09</td><td>HLT</td></tr>
+        <tr><td>03</td><td>AND</td><td>0A</td><td>PUSH</td></tr>
+        <tr><td>04</td><td>OR</td><td>0B</td><td>POP</td></tr>
+        <tr><td>05</td><td>MOV</td><td>0C</td><td>CALL</td></tr>
+        <tr><td>06</td><td>LD</td><td>0D</td><td>RET</td></tr>
+      </table>
+      <div class="box mini">
+        32-bit instruction fields: <code>op s1 s2 d</code>. LD/ST/Bcc use 2-word format; absolute address is next word; addressing-mode byte=<code>FF</code>. Bcc cc: <code>00 BR</code>, <code>01 BZ/BEQ</code>, <code>02 BNZ/BNE</code>.
+      </div>
+
+      <h2>Micro-ops</h2>
+      <div class="cue mini"><b>Use this when asked:</b> "data movement/transformation sequence" or datapath execution. Always start with fetch, then calculate address, read operands, ALU, write back.</div>
+      <pre>Fetch:
+MAR &lt;- PC
+IR  &lt;- mem[MAR]       # or MBR<-mem[MAR]; IR<-MBR
+PC  &lt;- PC+4</pre>
+      <pre>Reg ALU ADD R1,R2,R3:
+Read RF: RFOUT1=R1, RFOUT2=R2
+A &lt;- RFOUT1
+B &lt;- RFOUT2
+C &lt;- A+B
+RFIN &lt;- C
+write RF: R3 &lt;- RFIN</pre>
+      <pre>LD DISP(R1),R3:
+fetch instruction
+Read RF: R1 -> RFOUT1
+MAR &lt;- PC
+MBR &lt;- mem[MAR]       # DISP
+PC &lt;- PC+4
+A &lt;- RFOUT1
+B &lt;- MBR
+C &lt;- A+B              # effective addr
+MAR &lt;- C
+MBR &lt;- mem[MAR]
+RFIN &lt;- MBR
+write RF: R3 &lt;- RFIN</pre>
+      <pre>ADD OFF(R1),R2,R3:
+fetch; read R1 -> RFOUT1; fetch OFF into MBR; PC+=4
+A&lt;-RFOUT1; B&lt;-MBR; C&lt;-A+B; MAR&lt;-C
+MBR&lt;-mem[MAR]         # mem[OFF+R1]
+read R2 -> RFOUT2
+A&lt;-MBR; B&lt;-RFOUT2; C&lt;-A+B
+RFIN&lt;-C; write RF: R3&lt;-RFIN</pre>
+      <pre>ADD D1(R1),D2(R2),R3:
+fetch; fetch D1; EA1=R1+D1; MBR=mem[EA1]; TEMP=MBR
+fetch D2; EA2=R2+D2; MBR=mem[EA2]
+A&lt;-TEMP; B&lt;-MBR; C&lt;-A+B; R3&lt;-C</pre>
+      <pre>PUSH Rn: SP&lt;-SP-4; MAR&lt;-SP; MBR&lt;-Rn; mem[MAR]&lt;-MBR
+POP Rn : MAR&lt;-SP; MBR&lt;-mem[MAR]; Rn&lt;-MBR; SP&lt;-SP+4
+CALL target: fetch target word; PC now return addr;
+  TEMP&lt;-target; SP-=4; mem[SP]&lt;-PC; PC&lt;-TEMP
+RET: MAR&lt;-SP; SP&lt;-SP+4; MBR&lt;-mem[MAR]; PC&lt;-MBR
+BR (R4): PC&lt;-R4 value  (if memory indirect: MAR&lt;-R4 value; MBR&lt;-mem[MAR]; PC&lt;-MBR)</pre>
+    </div>
+
+    <div>
+      <h2>Pipeline + RISC</h2>
+      <div class="cue mini"><b>Use this when asked:</b> identify hazards, explain split cache, or compare RISC/simple instruction design.</div>
+      <div class="box">
+        <p>Stages: FI, DI, CO, FO, EI, WO. Modern 5-stage often IF, ID, EX, MEM, WB. Ideal pipeline: each instruction still takes several stages but throughput is 1 instruction/cycle, CPI about 1.</p>
+        <p><b>Structural/resource hazard:</b> same hardware needed by two stages; fix by more resources: separate I/D cache, PC incrementer, more buses.</p>
+        <p><b>Data hazard:</b> later instruction needs previous result. Main simple pipeline hazard is RAW. Fix by scheduling independent instructions, stalls, or forwarding.</p>
+        <p><b>Control hazard:</b> branch/CALL changes PC; next fetch unknown until branch resolved. Branch prediction reduces stalls.</p>
+      </div>
+      <pre>Worked hazard example:
+ADD R1,R2,R3
+SUB R3,R4,R5
+BMI L1
+SUB has RAW data hazard because it reads R3 produced by ADD.
+BMI depends on SUB flag/result and also causes control hazard because PC may change.</pre>
+      <div class="box mini">
+        RISC: register-register ALU ops; only LOAD/STORE access memory; fixed/simple formats; few modes; hardwired control; pipelining. Tradeoff: maybe more instructions, but lower CPI and clock cycle time.
+      </div>
+
+      <h2>Assembly Patterns</h2>
+      <div class="cue mini"><b>Use this when asked:</b> write assembly with invented ISA. Adapt the closest loop/function pattern and clearly state registers used for input/output.</div>
+      <pre># Common instruction meanings
+MOVI x,Rn        # Rn=x
+MOV Ra,Rb        # Rb=Ra
+LD addr,Rn       # Rn=mem[addr]
+LD (Ra),Rb       # Rb=mem[Ra]
+ST Rn,addr       # mem[addr]=Rn
+ADD Ra,Rb,Rc     # Rc=Ra+Rb
+SUB Ra,Rb,Rc     # Rc=Ra-Rb, sets flags
+AND Ra,x,Rb      # Rb=Ra & x
+BEQ L            # branch if zero flag=1
+BNE L            # branch if zero flag=0
+BMI L            # branch if negative</pre>
+      <pre># for (i=0;i&lt;N;i++) sum += A[i]
+MOVI 0,Rsum
+MOVI A,Rp
+MOVI N,Rn
+LOOP: LD (Rp),Rt
+      ADD Rsum,Rt,Rsum
+      ADD Rp,4,Rp
+      SUB Rn,1,Rn
+      BNE LOOP</pre>
+      <pre># Use if no MUL: repeated addition.
+# MYMUL: R8*R10 -> R12, R10 nonnegative
+MYMUL: MOVI 0,R12
+       MOV R10,R11
+ML:    SUB R11,0,R2     # test counter, set Z
+       BEQ MDONE
+       ADD R12,R8,R12
+       SUB R11,1,R11
+       BR ML
+MDONE: RET</pre>
+      <pre># Use if no DIV or need quotient+remainder.
+# MYDIV: nonnegative R10/R11 -> quotient R12, remainder R13; R11>0
+MYDIV: MOVI 0,R12
+       MOV R10,R13
+DL:    SUB R13,R11,R2
+       BMI DDONE
+       MOV R2,R13
+       ADD R12,1,R12
+       BR DL
+DDONE: RET</pre>
+      <pre># Use for two 7-segment digits or decimal display.
+# Convert x&lt;100 to 2 digits, no DIV
+# input R0; output R1=tens, R2=ones; R3=10
+CONV10: MOVI 10,R3
+        MOVI 0,R1
+        MOV R0,R2
+C10L:   SUB R2,R3,R4
+        BMI C10D
+        ADD R1,1,R1
+        MOV R4,R2
+        BR C10L
+C10D:   RET</pre>
+      <pre># Use for clock/time conversion questions.
+# CONVHMS: R14 seconds -> R15 h, R16 m, R17 s
+CONVHMS:
+  MOV R14,R10; MOVI 3600,R11; CALL MYDIV
+  MOV R12,R15              # hours
+  MOV R13,R10; MOVI 60,R11; CALL MYDIV
+  MOV R12,R16; MOV R13,R17
+  RET
+
+# GETDIGITS: R18 0..99 -> R19 tens, R20 ones
+GETDIGITS:
+  MOV R18,R10; MOVI 10,R11; CALL MYDIV
+  MOV R12,R19; MOV R13,R20; RET</pre>
+
+      <h2>Programmed I/O</h2>
+      <div class="cue mini"><b>Use this when asked:</b> CSR/status bits, ready/data-ready polling, serial output, rainfall/thermometer/timer display, or "Programmed I/O".</div>
+      <div class="box mini">
+        Programmed I/O = CPU controls I/O directly and polls CSR/status bits in a loop. Bad for high performance because CPU busy-waits. Other two techniques: interrupt-driven I/O and DMA.
+      </div>
+      <pre># Generic polling read
+READY: LD CSR,R1
+       AND R1,READYBIT,R2
+       BEQ READY
+       MOVI CMDBIT,R3
+       ST R3,CSR
+DATA:  LD CSR,R1
+       AND R1,DATABIT,R2
+       BEQ DATA
+       LD BR,R0</pre>
+      <pre># Serial output flow.
+# SCSR: err bit0=1, ready bit1=2, write bit2=0,
+# speed115200 bits5..3=100, even bit6=1 -> 0x60.
+SUB R1,R1,R1          # index byte offset, 0..36
+READY: LD SCSR,R2
+       AND R2,0x2,R3
+       BEQ READY
+WRITE: LD LINE(R1),R6
+       ST R6,SBRO
+       MOVI 0x60,R7
+       ST R7,SCSR     # initiate write
+WAIT:  LD SCSR,R2
+       AND R2,0x1,R3
+       BNE WRITE      # resend if error
+       AND R2,0x2,R3
+       BEQ WAIT
+       ADD R1,4,R1
+       SUB R1,0x28,R3 # end at 40B
+       BNE WRITE
+       HLT</pre>
+      <pre># Timer/clock sketch; for thermometer use Sensor+2 LEDs below.
+Clear LEDBR1..6 to 0.
+WAIT_READY: poll TCSR bit0.
+Reset: write bit2=4. Start: write bit3=8.
+LOOP: write/toggle snapshot bit4=16.
+WAIT_DATA: poll TCSR bit1.
+LD TBR,R14; CALL CONVHMS.
+For h,m,s: move value to R18; CALL GETDIGITS;
+store tens/ones to LEDBR pair; BR LOOP.</pre>
+      <div class="box mini">
+        Interrupt: device interrupts CPU when done; CPU saves PC+PSW, jumps to ISR, ISR saves used regs, performs service, restores regs, RETI restores PSW+PC. DMA: CPU tells IOP source/dest/count; IOP transfers memory directly by cycle stealing; interrupts only when whole I/O done.
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page">
+  <div class="cols">
+    <div>
+      <h1>Worked Mini-Answers</h1>
+      <div class="box mini">
+        Use these as answer-format examples. If a new number appears, follow the same line order: convert -> split fields -> compute final value. For cache examples, keep the block-size arithmetic visible.
+      </div>
+      <h2>Floating Worked Forms</h2>
+      <div class="cue mini"><b>Use these when asked:</b> "write down the bit pattern" or "what value is represented by this hex pattern?"</div>
+      <pre>32-bit custom: S | 10-bit E | 21-bit f, b=2^9-1=511
+-15.625:
+15.625 = 1111.101b = 1.111101b * 2^3
+S=1, E=3+511=514=1000000010b
+f=111101000000000000000
+bits: 1 1000000010 111101000000000000000
+hex: C05E8000</pre>
+      <pre>407F8000 in same custom format:
+binary = 0100 0000 0111 1111 1000 0000 0000 0000
+S=0
+E=1000000011b=515 -> actual exponent=4
+f=111111000000000000000
+1.f = 1.111111b = 1 + 63/64 = 1.984375
+V=1.984375*2^4 = 31.75</pre>
+      <pre>30.625 in S|13E|18f, b=4095:
+30.625=11110.101b=1.1110101b*2^4
+S=0, E=4099=1000000000011b
+f=111010100000000000
+bits: 0 1000000000011 111010100000000000</pre>
+
+      <h2>Short Concepts</h2>
+      <div class="cue mini"><b>Use these when asked:</b> short 2-3 mark definitions. Include one precise sentence plus one reason/example.</div>
+      <div class="box mini">
+        <p><b>Direct vs indirect:</b> direct instruction contains operand address; indirect contains address of a memory cell that contains the real operand address.</p>
+        <p><b>FIFO:</b> replace block that entered cache earliest. <b>LRU:</b> replace block unused for longest time.</p>
+        <p><b>Memory hierarchy downwards:</b> cost/bit decreases, capacity increases, access time increases, CPU access frequency decreases.</p>
+        <p><b>SRAM vs DRAM:</b> SRAM uses logic gates/latches, no refresh, faster, cache. DRAM uses charge, needs refresh, slower, main memory.</p>
+        <p><b>Endian:</b> big endian stores most significant byte at lowest address; little endian stores least significant byte at lowest address.</p>
+        <p><b>Memory-mapped I/O:</b> I/O registers placed in memory address space; normal load/store read/write CSR/data registers.</p>
+      </div>
+
+      <h2>Page / TLB Answers</h2>
+      <div class="cue mini"><b>Use this when asked:</b> why virtual memory is useful, what a page fault is, or why TLB helps performance.</div>
+      <div class="box mini">
+        <p><b>Why virtual memory:</b> program sees large logical address space; physical RAM may be smaller; OS/MMU manage movement and protection.</p>
+        <p><b>Demand paging:</b> pages loaded only when needed; fast startup; early page faults until working set loaded.</p>
+        <p><b>Page fault answer:</b> page not in RAM; OS finds page on disk, finds/free frame, writes dirty victim if needed, updates page tables, restarts faulting instruction/process later.</p>
+        <p><b>TLB:</b> cache of page table entries; avoids one extra memory access for page-table lookup on most references.</p>
+      </div>
+    </div>
+
+    <div>
+      <h2>Cache Worked Forms</h2>
+      <div class="cue mini"><b>Use these when asked:</b> compute number of blocks/sets, set/tag/offset for a specific address, or trace LRU/FIFO.</div>
+      <pre>Example: cache=1024 words, block=64 words, word=4B,
+2-way set associative.
+cache blocks = 1024/64 = 16
+sets = 16/2 = 8
+block_bytes = 64*4 = 256 = 2^8
+offset bits=8, set bits=log2(8)=3</pre>
+      <pre>Address C01E in above 2-way cache:
+block# = 0xC01E / 0x100 = 0xC0 = 192
+offset = 0x1E
+set = 192 mod 8 = 0
+tag = floor(192/8)=24=0x18
+same block: 0xC000..0xC0FF except 0xC01E</pre>
+      <pre>Direct mapped with 16 lines, address E3FC:
+block_bytes=256, offset=0xFC
+block#=0xE3
+line=0xE3 mod 16 = 3
+tag=floor(0xE3/16)=0xE</pre>
+      <pre>LRU trace recipe table:
+For each block b:
+  s = b mod sets
+  if b in set s: hit; mark b most recent
+  else miss; if empty insert; else evict least recent in set
+Keep each set ordered old -> recent.</pre>
+
+      <h2>Disk Worked Forms</h2>
+      <div class="cue mini"><b>Use these when asked:</b> "average rotational latency" or "time for sectors". Convert rpm to ms first.</div>
+      <pre>6000 rpm:
+rev/s = 6000/60 = 100
+one revolution = 1/100 s = 10 ms
+average rotational latency = 10/2 = 5 ms</pre>
+      <pre>7200 rpm:
+rev/s=120; rev time=1000/120=8.33ms
+avg latency=4.17ms
+If 500 sectors/track, sector time=8.33/500=0.0167ms</pre>
+
+      <h2>Cache/VM Analogies</h2>
+      <div class="cue mini"><b>Use this when asked:</b> compare cache and virtual memory. This table gives the paired words.</div>
+      <table class="tight mini">
+        <tr><th>Cache</th><th>Virtual memory</th></tr>
+        <tr><td>block</td><td>page</td></tr>
+        <tr><td>block offset</td><td>page offset</td></tr>
+        <tr><td>miss</td><td>page fault</td></tr>
+        <tr><td>tag</td><td>virtual page number</td></tr>
+        <tr><td>write-back dirty bit</td><td>PTE dirty bit</td></tr>
+      </table>
+
+      <h2>Performance Comparison</h2>
+      <div class="box mini">
+        Use when the question compares two processors by GHz. Same clock rate does not mean same speed. Need instruction count, CPI, clock rate, ISA, cache/memory behavior, and processor organization. Formula: <code>CPU time=instruction count*CPI/clock rate</code>.
+      </div>
+    </div>
+
+    <div>
+      <h2>Datapath Variations</h2>
+      <div class="cue mini"><b>Use this when asked:</b> unfamiliar instruction on the CPU datapath. Translate the instruction meaning first, then move one value at a time.</div>
+      <pre>ST DISP1(R1),DISP2(R3):
+meaning: mem[R3+DISP2] = mem[R1+DISP1]
+fetch instr; read R1 -> RFOUT1
+MAR<-PC; MBR<-mem[MAR]  # DISP1; PC+=4
+A<-RFOUT1; B<-MBR; C<-A+B; MAR<-C
+MBR<-mem[MAR]; TEMP<-MBR # source data
+MAR<-PC; MBR<-mem[MAR]  # DISP2; PC+=4
+read R3 -> RFOUT3       # state: add RFOUT3 path if absent
+A<-RFOUT3; B<-MBR; C<-A+B; MAR<-C
+MBR<-TEMP; mem[MAR]<-MBR</pre>
+      <pre>Direct memory ADD A,B,C (addresses in next words):
+fetch instruction
+fetch word Aaddr; MAR=Aaddr; MBR=mem[MAR]; Areg=MBR
+fetch word Baddr; MAR=Baddr; MBR=mem[MAR]; Breg=MBR
+Creg=Areg+Breg
+fetch word Caddr; MAR=Caddr; MBR=Creg; mem[MAR]=MBR</pre>
+      <pre>Improve datapath performance:
+Add multiple buses / separate register-file read buses so two ALU operands move at once.
+Add direct paths PC->MAR, MBR->IR, dedicated PC incrementer.
+In pipeline, split I-cache/D-cache to avoid IF vs data-memory conflict.</pre>
+
+      <h2>Branch / Function</h2>
+      <div class="cue mini"><b>Use these when asked:</b> write if/else, while-loop, odd/even test, or subroutine with saved registers.</div>
+      <pre># max of a[0],a[1] into x
+MOVI a,R8              # R8 = base address of a
+LD 0(R8),R9
+LD 4(R8),R10
+BGT R9,R10,TA    # if a[0] > a[1], use a[0]
+ST R10,x
+BR END
+TA: ST R9,x
+END: RET</pre>
+      <pre># while (temp < 100) { temp += a; a++; }
+MOVI 0,R8       # temp
+MOVI 1,R9       # a
+MOVI 100,R11
+W: ADD R8,R9,R8
+   ADD R9,1,R9
+   BLT R8,R11,W</pre>
+      <pre># odd/even using low bit
+AND Rx,1,Rt
+BEQ EVEN       # zero => even
+ODD:  ...
+EVEN: ...</pre>
+      <pre># Function register discipline
+If subroutine uses registers not declared scratch:
+push used registers on entry, pop before ret.
+Return address stored on stack so nested calls work LIFO.</pre>
+
+      <h2>Character Processing</h2>
+      <div class="cue mini"><b>Use this when asked:</b> character conversion or byte-by-byte string processing. ASCII lowercase differs from uppercase by 0x20.</div>
+      <pre># lowercase char in R10 -> uppercase if a..z
+PUSH R8; PUSH R9
+MOVI 0x61,R8       # 'a'
+MOVI 0x7a,R9       # 'z'
+BLT R10,R8,RET1
+BGT R10,R9,RET1
+SUB R10,0x20,R10   # 'a'-'A'
+RET1: POP R9; POP R8; RET</pre>
+    </div>
+
+    <div>
+      <h2>I/O Variations</h2>
+      <div class="cue mini"><b>Use this when asked:</b> a sensor plus LEDs, or any CSR with ready/start/data-ready bits. Poll ready, command device, poll data, read buffer, display.</div>
+      <pre># Sensor + 2 LEDs. Set masks from the question.
+# Thermometer exercise: CSR=TCSR, BR=TBR, READY=1, START=2, DATA=4
+# Rainfall exercise: CSR=RFCSR, BR=RFBR, READY=1, START=4, DATA=2
+READY: LD CSR,R2
+       AND R2,READY,R3
+       BEQ READY
+       MOVI START,R1
+       ST R1,CSR
+LOOP:  LD CSR,R2
+       AND R2,DATA,R3
+       BEQ LOOP
+       LD BR,R0
+       CALL CONV10       # R1=tens, R2=ones
+       ST R1,LEDBR1      # tens/left digit
+       ST R2,LEDBR2      # ones/right digit</pre>
+      <pre># If control bit should be set while preserving CSR:
+LD CSR,R1
+OR R1,CMDBIT,R1
+ST R1,CSR
+
+# If command register expects command value:
+MOVI CMDBIT,R1
+ST R1,CSR
+
+# In answer, state assumption if ambiguous.</pre>
+      <div class="box mini">
+        For CSR bit masks, convert bit n to value <code>2^n</code>. Example serial-control format: bit6 even parity=64, speed 115200 in bits5..3 is <code>100</code> = bit5 = 32, write bit2=0, so control <code>64+32=96=0x60</code>.
+      </div>
+
+      <h2>Lower-Priority Topics</h2>
+      <div class="cue mini"><b>Use this to prioritize review:</b> if a topic below appears only indirectly, cover it only when the wording explicitly asks.</div>
+      <div class="box mini">
+        Lower priority unless explicitly asked: proof that n*m multiplication has at most n+m bits, full proof of 2's-complement multiplication, Booth tables, S-R latch, detailed 2-to-1 multiplexer, IEEE NaN/infinity/subnormal rules, full simulator implementation details, full RAID 2 mechanics.
+      </div>
+
+      <h2>Answer Phrases</h2>
+      <div class="cue mini"><b>Use these when asked:</b> conceptual "explain why" questions. Select the relevant idea and add one course keyword.</div>
+      <div class="box mini">
+        <p><b>Programmed I/O bad:</b> CPU repeatedly checks status in a loop and wastes cycles while device is slow.</p>
+        <p><b>Interrupt advantage:</b> CPU can execute other code until device signals completion.</p>
+        <p><b>DMA advantage:</b> large block transfer directly between I/O controller and memory with little CPU involvement.</p>
+        <p><b>Split cache hazard:</b> avoids structural conflict when pipeline fetches instruction and accesses data in same cycle.</p>
+        <p><b>Direct map pro/con:</b> simple and fast; conflict misses if active blocks map to same line.</p>
+        <p><b>Fully assoc pro/con:</b> flexible and higher hit ratio; must compare many tags.</p>
+        <p><b>Set assoc:</b> compromise between direct and fully associative.</p>
+        <p><b>Floating-point caveat:</b> fixed total bit patterns, so more range means less precision; numbers are not evenly spaced.</p>
+      </div>
+
+      <h2>Final Checklist</h2>
+      <div class="box mini">
+        Before moving on: did you write units? For cache, did you say byte/word addressable? For assembly, did you state input/output registers and assumptions? For invented ISA questions, correctness and comments matter more than exact syntax.
+      </div>
+
+      <h2>Encoding Mini-Patterns</h2>
+      <div class="cue mini"><b>Use this when asked:</b> hand assemble instruction-encoding exercises. Replace register numbers and next-word addresses carefully.</div>
+      <pre>Instruction word = op s1 s2 d, each field 1 byte.
+ADD R4,R1,R4  -> 00 04 01 04 = 00040104
+SUB R3,R1,R5  -> 01 03 01 05 = 01030105
+MOV R1,R2     -> 05 01 00 02 = 05010002
+LD P1,R1      -> 06 00 FF 01 [addr(P1)]
+ST R4,P       -> 07 04 FF 00 [addr(P)]
+BNZ L         -> 08 02 FF 00 [addr(L)]
+HLT           -> 09 00 00 00 = 09000000
+PUSH R12      -> 0A 0C 00 00 = 0A0C0000
+POP R13       -> 0B 00 00 0D = 0B00000D
+CALL SQ       -> 0C 00 FF 00 [addr(SQ)]
+RET           -> 0D000000</pre>
+
+      <h2>Arithmetic Extras</h2>
+      <div class="cue mini"><b>Use this when asked:</b> relative error, multiplication proof idea, or product bit bound. These are lower-frequency but cheap marks if they appear.</div>
+      <div class="box mini">
+        <p><b>Relative error:</b> if exact value is <code>A</code> and stored value is <code>A'</code>, <code>|A-A'|/|A|</code> (signed form only if asked). For non-terminating binary fractions, write enough repeating bits, truncate/round, reconstruct <code>A'</code>, then compute.</p>
+        <p><b>2's multiplication idea:</b> sign-extend partial products to double precision; for multiplier sign bit 1 add two's complement of multiplicand; ignore carry out. Avoid proof unless asked.</p>
+        <p><b>Unsigned product bound:</b> n-bit max times m-bit max is <code>(2^n-1)(2^m-1) &lt; 2^(n+m)</code>, so product needs at most n+m bits.</p>
+      </div>
+
+      <div class="group">
+        <h2>OS / Protection</h2>
+        <div class="cue mini"><b>Use this when asked:</b> user/kernel mode, system calls, protected resources, or time sharing.</div>
+        <div class="box mini">
+          User mode cannot directly use protected resources or switch itself to kernel mode. System calls enter OS at controlled entry points and run in kernel/supervisor mode. Time sharing: when a process blocks on I/O or uses up its time slice, OS schedules another process.
+        </div>
+      </div>
+
+      <div class="group">
+        <h2>More Worked Quickies</h2>
+        <div class="cue mini"><b>Use these when asked:</b> common worked-number formats from practice exercises. Follow the line order, not just the final answer.</div>
+        <pre>8-bit reps of 24 and -24:
++24 unsigned = 00011000
+1's +24 = 00011000
+2's +24 = 00011000
+Excess-63 +24: 24+63=87 = 01010111
+
+-24:
+start +24 = 00011000
+1's comp = 11100111
+2's comp = 11101000
+Excess-63: -24+63=39 = 00100111</pre>
+      <pre>32-bit single-like S|8E|23f, b=127:
+13.375 = 1101.011b = 1.101011b*2^3
+S=0; E=3+127=130=10000010b
+f=10101100000000000000000
+bits=01000001010101100000000000000000
+hex=41560000</pre>
+      <pre>Address C912F, cache 1024 words, block 128 words,
+2-way, word=4B:
+block_bytes=512=2^9, offset=0x12F
+blocks=1024/128=8, sets=8/2=4
+block#=floor(0xC912F/0x200)=0x648
+set=0x648 mod 4 = 0
+tag=floor(0x648/4)=0x192
+same block: 0xC9000..0xC91FF</pre>
+        <div class="box mini">
+          <p><b>Spatial locality code:</b> in row-major arrays, use <code>for i rows</code> outside and <code>for j cols</code> inside so <code>a[i][j]</code> touches consecutive memory.</p>
+          <p><b>RAID 5 capacity:</b> with N equal disks, usable capacity=(N-1)*disk. Example six 10T disks -> 50T usable.</p>
+        </div>
+        <h2>VM Address Calc</h2>
+        <div class="cue mini"><b>Use this when asked:</b> translate a virtual/logical address using a page table or TLB.</div>
+        <pre>page_size = 2^p bytes -> offset has p bits
+VPN = floor(VA/page_size)
+offset = VA mod page_size
+If PTE valid: PA = PFN*page_size + offset
+If PTE invalid: page fault; OS loads page, updates PTE/TLB, restarts.</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
