@@ -26,3 +26,7 @@ Through this project, I strengthened my understanding of how computer systems re
 - Performance analysis: instruction count, CPI, clock rate, pipeline hazards, RISC tradeoffs, and memory-system effects
 - I/O and operating systems: programmed I/O, interrupts, DMA, device status registers, protection, and time sharing
 - Technical communication: condensing dense systems material into a structured reference with clear formulas, examples, and decision rules
+
+## License
+
+This repository is licensed under the MIT License.
